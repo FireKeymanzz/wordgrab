@@ -121,6 +121,31 @@ def double_click(x: int, y: int) -> None:
         time.sleep(0.08)
 
 
+def click_until_seen(hwnd: int, watcher, x: int, y: int, seen: list, *also_clear,
+                     attempts: int = 4) -> int:
+    """Click until the low-level hook reports the button-downs.
+
+    Synthetic clicks only land on the foreground window, and Windows happily
+    lets something else keep it (a browser restoring a tab, a tray app drawing
+    a panel, an IDE saving). Then the click silently goes nowhere and the hook
+    sees nothing at all -- so re-focus and retry rather than failing the run.
+    Returns how many attempts it took.
+    """
+    for attempt in range(1, attempts + 1):
+        focus(hwnd)
+        watcher._suppress = 0.0
+        seen.clear()
+        for extra in also_clear:
+            extra.clear()
+        double_click(x, y)
+        for _ in range(25):
+            if len(seen) >= 2:
+                return attempt
+            time.sleep(0.1)
+        print(f"   (attempt {attempt}: the desktop swallowed the click, retrying)")
+    return attempts
+
+
 def main() -> int:
     srv = server.ApiServer("127.0.0.1", 8802)
     base = f"http://127.0.0.1:{srv.start()}"
@@ -185,12 +210,9 @@ def main() -> int:
         user32.ClientToScreen(edit, ctypes.byref(pt))
 
         set_clipboard("UNRELATED-TEXT")
-        focus(hwnd)
-        time.sleep(0.2)
-        watcher._suppress = 0.0
-        seen.clear()
         # DPI scaling: SetCursorPos and the low-level hook use different
         # coordinate spaces, so read the physical position back after moving.
+        focus(hwnd)
         user32.SetCursorPos(pt.x, pt.y)
         time.sleep(0.15)
         cursor = capture.POINT()
@@ -198,8 +220,9 @@ def main() -> int:
         check("cursor parked over the word",
               abs(cursor.x - pt.x) <= 2 and abs(cursor.y - pt.y) <= 2,
               f"cursor={cursor.x},{cursor.y} target={pt.x},{pt.y}")
-        double_click(cursor.x, cursor.y)
-        time.sleep(2.0)
+        tries = click_until_seen(hwnd, watcher, cursor.x, cursor.y, seen, fired, failed)
+        check("double click reached the desktop", tries < 4, f"{tries} attempt(s)")
+        time.sleep(1.5)
         check("hook saw two button-down events", len(seen) == 2, str(seen))
         check("capture callback fired", bool(fired), str(fired[:1]))
         check("capture_word produced a result", not failed, str(failed[:1]))
@@ -215,11 +238,8 @@ def main() -> int:
         check("clipboard left untouched", clipboard_text() == "UNRELATED-TEXT",
               repr(clipboard_text()))
 
-        focus(hwnd)
-        time.sleep(0.2)
-        watcher._suppress = 0.0
-        double_click(pt.x, pt.y)
-        time.sleep(2.0)
+        click_until_seen(hwnd, watcher, pt.x, pt.y, seen, fired, failed)
+        time.sleep(1.5)
         words2 = api(base, "/words?limit=50")["words"]
         hit2 = [w for w in words2 if w["word"].lower() == "ephemeral"]
         check("repeat capture merges into one row", len(hit2) == 1, str(len(hit2)))

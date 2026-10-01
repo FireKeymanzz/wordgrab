@@ -74,6 +74,17 @@ verify()
   加完记得在 `tests/test_core.py` 里补一条兼容性断言。
 - 界面配色/间距集中改 `wordgrab/ui.py` 顶部的常量，别在控件里散落魔法数字。
 
+## 改界面之后
+
+README 里的图是脚本生成的，别手改：
+
+```bat
+python tools\make_demo_gif.py     :: 重新生成 docs/demo-review.gif
+```
+
+它会真的建一个面板、真的敲键盘、真的截屏，所以改了复习页的文案或配色之后跑一遍就行。
+`docs/screenshot-*.png` 是手工用同样的沙箱办法截的（`WORDGRAB_DATA` 指到临时目录，不碰真实词库）。
+
 ## 提 PR
 
 - 一个 PR 只做一件事，描述里写清**为什么**改（不是「改了什么」）。

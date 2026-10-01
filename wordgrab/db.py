@@ -381,7 +381,10 @@ def search_words(query: str = "", limit: int = 100, offset: int = 0) -> list[sql
     conn = get_conn()
     q = (query or "").strip()
     if q:
-        like = f"%{q.replace('%', r'\%').replace('_', r'\_')}%"
+        # escaped separately: a backslash inside an f-string expression is only
+        # legal on Python 3.12+ (PEP 701), and this project supports 3.10
+        escaped = q.replace("%", r"\%").replace("_", r"\_")
+        like = f"%{escaped}%"
         return conn.execute(
             """SELECT * FROM words
                 WHERE word LIKE ? ESCAPE '\\' OR IFNULL(definition,'') LIKE ? ESCAPE '\\'
