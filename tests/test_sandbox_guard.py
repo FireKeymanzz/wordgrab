@@ -27,6 +27,16 @@ def check(name: str, cond: bool, extra: str = "") -> None:
 
 def main() -> int:
     tmp = activate("wordgrab-sandbox-selftest_")
+
+    # 全新 clone 里 data/ 根本不存在（被 gitignore），这个自检需要往里面写东西、
+    # 并且需要至少有一个真实文件才能验证"改动已有文件"也抓得到。先把目录和哨兵
+    # 建好——只新建，不碰任何已有数据。
+    empty = not REAL_DATA.exists() or not any(p.is_file() for p in REAL_DATA.iterdir())
+    if empty:
+        guard_real_data()
+        rebase()  # 哨兵是有意为之的一次性改动
+        print(f"   (created an empty {REAL_DATA} + sentinel for this self-test)")
+
     check("activate points WORDGRAB_DATA at a temp dir",
           os.environ["WORDGRAB_DATA"] == str(tmp), os.environ["WORDGRAB_DATA"])
     check("sandbox is NOT the real data dir",
