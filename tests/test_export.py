@@ -100,8 +100,11 @@ def main() -> int:
     check("txt has no definitions", "短暂的" not in txt)
 
     anki_txt = export.render("anki_txt", rows())
+    # no .strip() here: a word without a definition ends in "word\t", and strip()
+    # would eat that tab as trailing whitespace and leave a separator-less line
     check("anki_txt is word<TAB>definition",
-          all("\t" in ln for ln in anki_txt.strip().splitlines()))
+          all("\t" in ln for ln in anki_txt.splitlines()),
+          repr(anki_txt.splitlines()[-1:]))
 
     # -------------------------------------------------------------- filters
     check("query filter", {r["word"] for r in rows(query="ephem")} == {"ephemeral"})

@@ -397,13 +397,18 @@ def search_words(query: str = "", limit: int = 100, offset: int = 0) -> list[sql
 
 def list_words(status: str | None = None, limit: int = 100, offset: int = 0) -> list[sqlite3.Row]:
     conn = get_conn()
+    # id DESC is the tiebreaker on purpose: words captured in the same
+    # millisecond share updated_at, and without it SQLite is free to return
+    # them in any order -- which made exports non-reproducible.
     if status:
         return conn.execute(
-            "SELECT * FROM words WHERE status = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+            """SELECT * FROM words WHERE status = ?
+                ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?""",
             (status, limit, offset),
         ).fetchall()
     return conn.execute(
-        "SELECT * FROM words ORDER BY updated_at DESC LIMIT ? OFFSET ?", (limit, offset)
+        "SELECT * FROM words ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?",
+        (limit, offset),
     ).fetchall()
 
 
