@@ -39,10 +39,28 @@ def ensure_dir() -> Path:
     return d
 
 
+_stamp_us = 0
+
+
 def _ts() -> str:
     """Sortable, and unique per call: two snapshots in the same second must not
-    overwrite each other."""
-    return time.strftime("%Y%m%d-%H%M%S") + f"-{time.time_ns() % 1000000:06d}"
+    overwrite each other.
+
+    The wall clock is NOT monotonic on every machine: Windows steps it backwards
+    now and then (time service, VM resume) and its resolution is coarse, which
+    can make the sub-second part jump back by ~half a second. Since prune()
+    deletes by *name order*, a backwards step makes a brand new snapshot look
+    older than the ones it should replace — and it deletes itself, so the newest
+    backup silently disappears. Integer microseconds keep the name strictly
+    increasing no matter what the clock does.
+    """
+    global _stamp_us
+    now_us = int(time.time() * 1_000_000)
+    if now_us <= _stamp_us:
+        now_us = _stamp_us + 1
+    _stamp_us = now_us
+    return (time.strftime("%Y%m%d-%H%M%S", time.localtime(now_us / 1_000_000))
+            + f"-{now_us % 1_000_000:06d}")
 
 
 def _checkpoint(conn: sqlite3.Connection | None = None) -> None:
@@ -79,7 +97,7 @@ def snapshot(reason: str = "manual") -> str | None:
         get_logger().error("backup failed: %s", exc)
         return None
     get_logger().info("backed up the database (%s) -> %s", reason, target.name)
-    prune()
+    prune(protect=target)
     return str(target)
 
 
@@ -136,12 +154,17 @@ def mirror_in_background() -> None:
     threading.Thread(target=run, name="mirror", daemon=True).start()
 
 
-def prune(keep: int = KEEP_SNAPSHOTS) -> int:
-    """Delete all but the newest `keep` snapshots."""
+def prune(keep: int = KEEP_SNAPSHOTS, protect: Path | str | None = None) -> int:
+    """Delete all but the newest `keep` snapshots.
+
+    `protect` is never deleted: a snapshot must not be able to prune itself away
+    (it would, if the clock stepped backwards and the name no longer sorts last).
+    """
     try:
         d = backup_dir()
         if not d.exists():
             return 0
+        keep_name = Path(protect).name if protect else None
         snaps = sorted(
             (p for p in d.glob(f"{SNAPSHOT_PREFIX}*.db")
              if "-wal" not in p.name and "-shm" not in p.name),
@@ -149,6 +172,8 @@ def prune(keep: int = KEEP_SNAPSHOTS) -> int:
         )
         removed = 0
         for old in snaps[keep:]:
+            if keep_name and old.name == keep_name:
+                continue
             base = Path(str(old)[:-3])
             for path in (old, Path(str(base) + "-wal"), Path(str(base) + "-shm")):
                 try:

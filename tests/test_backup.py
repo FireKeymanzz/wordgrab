@@ -6,6 +6,7 @@ import json
 import os
 import sqlite3
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -117,7 +118,24 @@ def main() -> int:
     check("pruning removed sidecars of deleted snapshots",
           all(p.rsplit(".", 1)[0] not in live for p in orphan), str(orphan[:3]))
 
-    # the flood may have pruned our restore target, so take a fresh one
+    # ------------------------------------------- regression: a backwards clock
+    # Real bug found on a machine whose wall clock steps backwards: _ts() is the
+    # sort key prune() deletes by, so a fresh snapshot that "looked older" pruned
+    # ITSELF away and the newest backup silently vanished.
+    real_time = time.time
+    ticks = iter([real_time() + 500, real_time() - 500, real_time() - 900] * 40)
+    backup.time.time = lambda: next(ticks)
+    try:
+        names = [os.path.basename(backup.snapshot("clock-jump")) for _ in range(30)]
+    finally:
+        backup.time.time = real_time
+    check("names stay sortable even if the clock jumps backwards",
+          names == sorted(names), str(names[:2]))
+    check("no two snapshots share a name", len(set(names)) == len(names), str(len(set(names))))
+    check("a fresh snapshot never prunes itself away",
+          os.path.exists(os.path.join(str(bdir), names[-1])), names[-1])
+
+    # the flood and the clock jumps may have pruned our restore target
     restore_target = backup.snapshot("restore-source")
     check("restore source exists", restore_target and os.path.exists(restore_target),
           str(restore_target))
