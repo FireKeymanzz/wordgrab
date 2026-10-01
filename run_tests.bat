@@ -13,15 +13,27 @@ if not exist "tests\sandbox.py" (
 )
 
 rem keep a pre-test snapshot so a bug can never cost you the library
+set PY=python
+if exist ".venv\Scripts\python.exe" set PY=.venv\Scripts\python.exe
+
+rem WordGrab holds a single-instance mutex. If it is still running, (a) the
+rem snapshot below turns into a no-op (the new process just asks the running
+rem one to show its panel) and (b) the sandbox check reports a false alarm,
+rem because the app's own connections keep rewriting the SQLite -wal/-shm.
+"%PY%" -c "import sys; sys.path.insert(0,'.'); from wordgrab import instance; sys.exit(0 if instance.is_running() else 1)" >nul 2>&1
+if not errorlevel 1 (
+  echo WARNING: WordGrab is still running in the tray.
+  echo          Quit it first, or the tests will report a false alarm on your
+  echo          real words.db and the pre-test snapshot will be skipped.
+  echo.
+)
+
 if exist "data\words.db" (
   echo [0/1] snapshotting the current library before tests...
-  ".venv\Scripts\python.exe" -X utf8 -m wordgrab --backup >nul 2>&1 || (
+  "%PY%" -X utf8 -m wordgrab --backup >nul 2>&1 || (
     python -X utf8 -m wordgrab --backup >nul 2>&1
   )
 )
-
-set PY=python
-if exist ".venv\Scripts\python.exe" set PY=.venv\Scripts\python.exe
 
 "%PY%" -X utf8 tests\test_core.py || goto :fail
 echo [1/10] core ok

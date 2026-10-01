@@ -69,11 +69,19 @@ def verify() -> None:
         changed = sorted(set(before) ^ set(after))
         changed += sorted(k for k in set(before) & set(after) if before[k] != after[k])
         if changed:
+            hint = ""
+            if all(name.endswith(("-wal", "-shm")) for name in changed):
+                hint = (
+                    "\nOnly SQLite's -wal/-shm sidecars changed, which is what happens"
+                    "\nwhen WordGrab itself is still running in the tray: its connection"
+                    "\nchurn triggers checkpoints that rewrite those two files."
+                    "\nQuit WordGrab from the tray and run the tests again."
+                )
             raise SandboxViolation(
                 "these real data files were modified during the test run: "
                 + ", ".join(changed)
                 + "\nThe test suite must use sandbox.activate() before importing wordgrab."
-                + "\nRestore with:  python -m wordgrab --backups"
+                + "\nRestore with:  python -m wordgrab --backups" + hint
             )
     if tmp and tmp.exists():
         shutil.rmtree(tmp, ignore_errors=True)
