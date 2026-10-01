@@ -1,0 +1,5 @@
+httpx>=0.27
+pystray>=0.19
+pillow>=10.0
+pywin32>=306
+comtypes>=1.4

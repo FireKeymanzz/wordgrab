@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; width: 300px; padding: 16px;
+    background: #12141a; color: #e8eaf0;
+    font: 13px/1.6 "Microsoft YaHei UI", system-ui, sans-serif;
+  }
+  h1 { margin: 0 0 4px; font-size: 15px; letter-spacing: .5px; }
+  .muted { color: #8b93a7; font-size: 11px; }
+  .card {
+    margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+    background: #1b1f2a; border: 1px solid #2a3040;
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .on { background: #5eead4; } .off { background: #f87171; }
+  button {
+    width: 100%; margin-top: 10px; padding: 8px; border: 0; border-radius: 8px;
+    background: #5eead4; color: #0b0f14; font-weight: 700; cursor: pointer;
+  }
+  button.ghost { background: #262c3a; color: #e8eaf0; font-weight: 400; }
+  .switch { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  input[type=checkbox] { width: 16px; height: 16px; accent-color: #5eead4; }
+</style>
+</head>
+<body>
+  <h1>WordGrab</h1>
+  <div class="muted">双击网页上的单词即可入库存词</div>
+
+  <div class="card">
+    <div class="row">
+      <span><i id="dot" class="dot off"></i><span id="state">检测中…</span></span>
+      <span class="muted" id="stats"></span>
+    </div>
+    <div class="switch">
+      <span>启用划词捕获</span>
+      <input type="checkbox" id="toggle" checked />
+    </div>
+    <button id="reload">刷新状态</button>
+    <button class="ghost" id="copy">复制本地地址</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

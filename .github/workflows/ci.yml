@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 不依赖交互桌面的一组：每次 push 都跑，秒级反馈
+  core:
+    name: core (no desktop needed)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: test_core
+        run: python -X utf8 tests/test_core.py
+      - name: test_export
+        run: python -X utf8 tests/test_export.py
+      - name: test_concurrency
+        run: python -X utf8 tests/test_concurrency.py
+      - name: test_backup
+        run: python -X utf8 tests/test_backup.py
+      - name: test_sandbox_guard
+        run: python -X utf8 tests/test_sandbox_guard.py
+
+  # 浏览器扩展：需要下载 chromium（约 150MB），单独一个 job 免得拖累上面的
+  extension:
+    name: browser extension
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          python -m playwright install chromium
+      - name: test_extension
+        run: python -X utf8 tests/test_extension.py
+
+  # 语法体检：Windows 专用的模块在 Linux 上 import 不了，所以只做编译检查，
+  # 顺便保证没有 tabs / 尾随空格之类的脏东西混进来
+  lint:
+    name: syntax
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Byte-compile everything
+        run: python -m compileall -q wordgrab tests
+      - name: Trailing whitespace / tabs
+        run: |
+          $bad = Get-ChildItem -Recurse -Include *.py,*.js,*.json,*.md,*.yml -File |
+                 Where-Object { $_.FullName -notmatch '\\(\.venv|\.git|node_modules)\\' } |
+                 Select-String -Pattern "[ \t]+$"
+          if ($bad) { $bad | ForEach-Object { "$($_.Path):$($_.LineNumber)" }; exit 1 }
+          Write-Output "clean"

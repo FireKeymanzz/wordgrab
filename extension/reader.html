@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>WordGrab 阅读器</title>
+<style>
+  body {
+    margin: 0; background: #12141a; color: #e8eaf0;
+    font: 17px/1.9 "Microsoft YaHei UI", "Songti SC", serif;
+  }
+  #bar {
+    position: sticky; top: 0; display: flex; gap: 8px; align-items: center;
+    padding: 10px 16px; background: #171b24; border-bottom: 1px solid #2a3040;
+    font: 13px/1.5 "Microsoft YaHei UI", sans-serif;
+  }
+  input[type=file] { color: #8b93a7; }
+  button {
+    padding: 5px 12px; border: 0; border-radius: 6px; background: #262c3a;
+    color: #e8eaf0; cursor: pointer;
+  }
+  button.primary { background: #5eead4; color: #0b0f14; font-weight: 700; }
+  #meta { color: #8b93a7; margin-left: auto; }
+  #text { max-width: 780px; margin: 0 auto; padding: 32px 24px 120px; white-space: pre-wrap; }
+  #text::selection, #text ::selection { background: #2f6b5f; }
+  .todo { color: #8b93a7; }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <input type="file" id="file" accept=".txt,.md,.markdown,.csv,.json,.log" />
+    <button id="theme" class="primary">切换主题</button>
+    <button id="stats">状态</button>
+    <span id="meta">选一个本地文本文件开始；双击任意词即可入库存词</span>
+  </div>
+  <div id="text"></div>
+
+  <script src="reader.js"></script>
+</body>
+</html>

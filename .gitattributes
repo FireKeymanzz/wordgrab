@@ -1,0 +1,12 @@
+# 仓库里统一存 LF，检出时按平台转换——避免每个人机器上行尾符不一样导致 diff 全红
+* text=auto eol=lf
+
+# 批处理必须是 CRLF，否则老版本 cmd.exe 可能出问题
+*.bat text eol=crlf
+
+# 二进制
+*.png binary
+*.jpg binary
+*.ico binary
+*.db binary
+*.woff2 binary

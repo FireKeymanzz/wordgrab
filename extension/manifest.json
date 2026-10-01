@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "WordGrab — 划词入生词库",
+  "version": "0.1.0",
+  "description": "在网页上双击单词，自动加入本地 WordGrab 生词库并抓取上下文原句。",
+  "permissions": ["storage", "notifications"],
+  "host_permissions": ["http://127.0.0.1:8731/*"],
+  "icons": { "128": "icon.png" },
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "WordGrab",
+    "default_popup": "popup.html",
+    "default_icon": { "128": "icon.png" }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

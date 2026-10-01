@@ -1,0 +1,39 @@
+# ---- 真实数据：绝不入库 ----------------------------------------------
+# 里面是你的生词库、日志、备份、配置（可能有隐私：读的什么书、记了什么笔记）
+data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+config.json
+words-mirror.json
+ecdict.csv
+
+# ---- Python ----------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ---- 测试 / 工具缓存 -------------------------------------------------
+tests/__pycache__/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# ---- 编辑器 / 系统 ---------------------------------------------------
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store

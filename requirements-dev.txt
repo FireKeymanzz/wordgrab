@@ -1,0 +1,5 @@
+# 运行时依赖（start.bat 会自动装）
+-r requirements.txt
+
+# 仅测试用：扩展的浏览器端自动化验证
+playwright>=1.44
